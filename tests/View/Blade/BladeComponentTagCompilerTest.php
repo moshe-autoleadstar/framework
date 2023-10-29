@@ -26,6 +26,14 @@ class BladeComponentTagCompilerTest extends AbstractBladeTestCase
         $this->assertSame("@slot('foo') \n".' @endslot', trim($result));
     }
 
+    public function testDynamicSlotsCanBeCompiled()
+    {
+        $result = $this->compiler()->compileSlots('<x-slot :name="$foo">
+</x-slot>');
+
+        $this->assertSame("@slot(\$foo) \n".' @endslot', trim($result));
+    }
+
     public function testBasicComponentParsing()
     {
         $this->mockViewFactory();
@@ -197,9 +205,26 @@ class BladeComponentTagCompilerTest extends AbstractBladeTestCase
 '@endcomponentClass', trim($result));
     }
 
+    public function testPackagesClasslessComponents()
+    {
+        $container = new Container;
+        $container->instance(Application::class, $app = Mockery::mock(Application::class));
+        $container->instance(Factory::class, $factory = Mockery::mock(Factory::class));
+        $app->shouldReceive('getNamespace')->andReturn('App\\');
+        $factory->shouldReceive('exists')->andReturn(true);
+        Container::setInstance($container);
+
+        $result = $this->compiler()->compileTags('<x-package::anonymous-component :name="\'Taylor\'" :age="31" wire:model="foo" />');
+
+        $this->assertSame("@component('Illuminate\View\AnonymousComponent', 'package::anonymous-component', ['view' => 'package::components.anonymous-component','data' => ['name' => 'Taylor','age' => 31,'wire:model' => 'foo']])
+<?php \$component->withAttributes(['name' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('Taylor'),'age' => 31,'wire:model' => 'foo']); ?>\n".
+'@endcomponentClass', trim($result));
+    }
+
     public function testAttributeSanitization()
     {
-        $class = new class {
+        $class = new class
+        {
             public function __toString()
             {
                 return '<hi>';

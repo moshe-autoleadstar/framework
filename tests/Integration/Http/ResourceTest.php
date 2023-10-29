@@ -17,6 +17,7 @@ use Illuminate\Tests\Integration\Http\Fixtures\Post;
 use Illuminate\Tests\Integration\Http\Fixtures\PostCollectionResource;
 use Illuminate\Tests\Integration\Http\Fixtures\PostResource;
 use Illuminate\Tests\Integration\Http\Fixtures\PostResourceWithExtraData;
+use Illuminate\Tests\Integration\Http\Fixtures\PostResourceWithOptionalAppendedAttributes;
 use Illuminate\Tests\Integration\Http\Fixtures\PostResourceWithOptionalData;
 use Illuminate\Tests\Integration\Http\Fixtures\PostResourceWithOptionalMerging;
 use Illuminate\Tests\Integration\Http\Fixtures\PostResourceWithOptionalPivotRelationship;
@@ -147,6 +148,59 @@ class ResourceTest extends TestCase
                 'id' => 5,
                 'second' => 'value',
                 'third' => 'value',
+                'fourth' => 'default',
+                'fifth' => 'default',
+            ],
+        ]);
+    }
+
+    public function testResourcesMayHaveOptionalAppendedAttributes()
+    {
+        Route::get('/', function () {
+            $post = new Post([
+                'id' => 5,
+            ]);
+
+            $post->append('is_published');
+
+            return new PostResourceWithOptionalAppendedAttributes($post);
+        });
+
+        $response = $this->withoutExceptionHandling()->get(
+            '/', ['Accept' => 'application/json']
+        );
+
+        $response->assertStatus(200);
+
+        $response->assertJson([
+            'data' => [
+                'id' => 5,
+                'first' => true,
+                'second' => 'override value',
+                'third' => 'override value',
+                'fourth' => true,
+                'fifth' => true,
+            ],
+        ]);
+    }
+
+    public function testResourcesWithOptionalAppendedAttributesReturnDefaultValuesAndNotMissingValues()
+    {
+        Route::get('/', function () {
+            return new PostResourceWithOptionalAppendedAttributes(new Post([
+                'id' => 5,
+            ]));
+        });
+
+        $response = $this->withoutExceptionHandling()->get(
+            '/', ['Accept' => 'application/json']
+        );
+
+        $response->assertStatus(200);
+
+        $response->assertExactJson([
+            'data' => [
+                'id' => 5,
                 'fourth' => 'default',
                 'fifth' => 'default',
             ],
@@ -803,7 +857,8 @@ class ResourceTest extends TestCase
 
     public function testLeadingMergeKeyedValueIsMergedCorrectly()
     {
-        $filter = new class {
+        $filter = new class
+        {
             use ConditionallyLoadsAttributes;
 
             public function work()
@@ -823,7 +878,8 @@ class ResourceTest extends TestCase
 
     public function testLeadingMergeKeyedValueIsMergedCorrectlyWhenFirstValueIsMissing()
     {
-        $filter = new class {
+        $filter = new class
+        {
             use ConditionallyLoadsAttributes;
 
             public function work()
@@ -847,7 +903,8 @@ class ResourceTest extends TestCase
 
     public function testLeadingMergeValueIsMergedCorrectly()
     {
-        $filter = new class {
+        $filter = new class
+        {
             use ConditionallyLoadsAttributes;
 
             public function work()
@@ -872,7 +929,8 @@ class ResourceTest extends TestCase
 
     public function testMergeValuesMayBeMissing()
     {
-        $filter = new class {
+        $filter = new class
+        {
             use ConditionallyLoadsAttributes;
 
             public function work()
@@ -897,7 +955,8 @@ class ResourceTest extends TestCase
 
     public function testInitialMergeValuesMayBeMissing()
     {
-        $filter = new class {
+        $filter = new class
+        {
             use ConditionallyLoadsAttributes;
 
             public function work()
@@ -922,7 +981,8 @@ class ResourceTest extends TestCase
 
     public function testMergeValueCanMergeJsonSerializable()
     {
-        $filter = new class {
+        $filter = new class
+        {
             use ConditionallyLoadsAttributes;
 
             public function work()
@@ -953,7 +1013,8 @@ class ResourceTest extends TestCase
 
     public function testMergeValueCanMergeCollectionOfJsonSerializable()
     {
-        $filter = new class {
+        $filter = new class
+        {
             use ConditionallyLoadsAttributes;
 
             public function work()
@@ -979,7 +1040,8 @@ class ResourceTest extends TestCase
 
     public function testAllMergeValuesMayBeMissing()
     {
-        $filter = new class {
+        $filter = new class
+        {
             use ConditionallyLoadsAttributes;
 
             public function work()
@@ -1004,7 +1066,8 @@ class ResourceTest extends TestCase
 
     public function testNestedMerges()
     {
-        $filter = new class {
+        $filter = new class
+        {
             use ConditionallyLoadsAttributes;
 
             public function work()

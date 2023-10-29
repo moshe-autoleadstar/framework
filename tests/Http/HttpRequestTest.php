@@ -300,6 +300,62 @@ class HttpRequestTest extends TestCase
         $this->assertTrue($request->has('foo.baz'));
     }
 
+    public function testWhenHasMethod()
+    {
+        $request = Request::create('/', 'GET', ['name' => 'Taylor', 'age' => '', 'city' => null]);
+
+        $name = $age = $city = $foo = false;
+
+        $request->whenHas('name', function ($value) use (&$name) {
+            $name = $value;
+        });
+
+        $request->whenHas('age', function ($value) use (&$age) {
+            $age = $value;
+        });
+
+        $request->whenHas('city', function ($value) use (&$city) {
+            $city = $value;
+        });
+
+        $request->whenHas('foo', function () use (&$foo) {
+            $foo = 'test';
+        });
+
+        $this->assertSame('Taylor', $name);
+        $this->assertSame('', $age);
+        $this->assertNull($city);
+        $this->assertFalse($foo);
+    }
+
+    public function testWhenFilledMethod()
+    {
+        $request = Request::create('/', 'GET', ['name' => 'Taylor', 'age' => '', 'city' => null]);
+
+        $name = $age = $city = $foo = false;
+
+        $request->whenFilled('name', function ($value) use (&$name) {
+            $name = $value;
+        });
+
+        $request->whenFilled('age', function ($value) use (&$age) {
+            $age = 'test';
+        });
+
+        $request->whenFilled('city', function ($value) use (&$city) {
+            $city = 'test';
+        });
+
+        $request->whenFilled('foo', function () use (&$foo) {
+            $foo = 'test';
+        });
+
+        $this->assertSame('Taylor', $name);
+        $this->assertFalse($age);
+        $this->assertFalse($city);
+        $this->assertFalse($foo);
+    }
+
     public function testMissingMethod()
     {
         $request = Request::create('/', 'GET', ['name' => 'Taylor', 'age' => '', 'city' => null]);
@@ -366,6 +422,23 @@ class HttpRequestTest extends TestCase
 
         $request = Request::create('/', 'GET', ['foo' => ['bar' => 'baz']]);
         $this->assertTrue($request->filled('foo.bar'));
+    }
+
+    public function testIsNotFilledMethod()
+    {
+        $request = Request::create('/', 'GET', ['name' => 'Taylor', 'age' => '', 'city' => null]);
+        $this->assertFalse($request->isNotFilled('name'));
+        $this->assertTrue($request->isNotFilled('age'));
+        $this->assertTrue($request->isNotFilled('city'));
+        $this->assertTrue($request->isNotFilled('foo'));
+        $this->assertFalse($request->isNotFilled(['name', 'email']));
+        $this->assertTrue($request->isNotFilled(['foo', 'age']));
+        $this->assertTrue($request->isNotFilled(['age', 'city']));
+
+        $request = Request::create('/', 'GET', ['foo' => ['bar', 'baz' => '0']]);
+        $this->assertFalse($request->isNotFilled('foo'));
+        $this->assertTrue($request->isNotFilled('foo.bar'));
+        $this->assertFalse($request->isNotFilled('foo.baz'));
     }
 
     public function testFilledAnyMethod()

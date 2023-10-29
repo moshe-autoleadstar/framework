@@ -2,6 +2,7 @@
 
 namespace Illuminate\Tests\Database;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection as BaseCollection;
@@ -229,6 +230,35 @@ class DatabaseEloquentCollectionTest extends TestCase
         $this->assertEquals(BaseCollection::class, get_class($c));
     }
 
+    public function testMapWithKeys()
+    {
+        $one = m::mock(Model::class);
+        $two = m::mock(Model::class);
+
+        $c = new Collection([$one, $two]);
+
+        $key = 0;
+        $cAfterMap = $c->mapWithKeys(function ($item) use (&$key) {
+            return [$key++ => $item];
+        });
+
+        $this->assertEquals($c->all(), $cAfterMap->all());
+        $this->assertInstanceOf(Collection::class, $cAfterMap);
+    }
+
+    public function testMapWithKeysToNonModelsReturnsABaseCollection()
+    {
+        $one = m::mock(Model::class);
+        $two = m::mock(Model::class);
+
+        $key = 0;
+        $c = (new Collection([$one, $two]))->mapWithKeys(function ($item) use (&$key) {
+            return [$key++ => 'not-a-model'];
+        });
+
+        $this->assertEquals(BaseCollection::class, get_class($c));
+    }
+
     public function testCollectionDiffsWithGivenCollection()
     {
         $one = m::mock(Model::class);
@@ -435,17 +465,22 @@ class DatabaseEloquentCollectionTest extends TestCase
     public function testQueueableRelationshipsReturnsOnlyRelationsCommonToAllModels()
     {
         // This is needed to prevent loading non-existing relationships on polymorphic model collections (#26126)
-        $c = new Collection([new class {
-            public function getQueueableRelations()
+        $c = new Collection([
+            new class
             {
-                return ['user'];
-            }
-        }, new class {
-            public function getQueueableRelations()
+                public function getQueueableRelations()
+                {
+                    return ['user'];
+                }
+            },
+            new class
             {
-                return ['user', 'comments'];
-            }
-        }]);
+                public function getQueueableRelations()
+                {
+                    return ['user', 'comments'];
+                }
+            },
+        ]);
 
         $this->assertEquals(['user'], $c->getQueueableRelations());
     }
@@ -454,6 +489,30 @@ class DatabaseEloquentCollectionTest extends TestCase
     {
         $c = new Collection;
         $this->assertEquals($c, $c->fresh());
+    }
+
+    public function testCanConvertCollectionOfModelsToEloquentQueryBuilder()
+    {
+        $one = m::mock(Model::class);
+        $one->shouldReceive('getKey')->andReturn(1);
+
+        $two = m::mock(Model::class);
+        $two->shouldReceive('getKey')->andReturn(2);
+
+        $c = new Collection([$one, $two]);
+
+        $mocBuilder = m::mock(Builder::class);
+        $one->shouldReceive('newModelQuery')->once()->andReturn($mocBuilder);
+        $mocBuilder->shouldReceive('whereKey')->once()->with($c->modelKeys())->andReturn($mocBuilder);
+        $this->assertInstanceOf(Builder::class, $c->toQuery());
+    }
+
+    public function testConvertingEmptyCollectionToQueryThrowsException()
+    {
+        $this->expectException(LogicException::class);
+
+        $c = new Collection;
+        $c->toQuery();
     }
 }
 

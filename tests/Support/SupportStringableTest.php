@@ -92,6 +92,32 @@ class SupportStringableTest extends TestCase
         }));
     }
 
+    public function testWhenFalse()
+    {
+        $this->assertSame('when', (string) $this->stringable('when')->when(false, function ($stringable, $value) {
+            return $stringable->append($value)->append('false');
+        }));
+
+        $this->assertSame('when false fallbacks to default', (string) $this->stringable('when false ')->when(false, function ($stringable, $value) {
+            return $stringable->append($value);
+        }, function ($stringable) {
+            return $stringable->append('fallbacks to default');
+        }));
+    }
+
+    public function testWhenTrue()
+    {
+        $this->assertSame('when true', (string) $this->stringable('when ')->when(true, function ($stringable) {
+            return $stringable->append('true');
+        }));
+
+        $this->assertSame('gets a value from if', (string) $this->stringable('gets a value ')->when('from if', function ($stringable, $value) {
+            return $stringable->append($value);
+        }, function ($stringable) {
+            return $stringable->append('fallbacks to default');
+        }));
+    }
+
     public function testTrimmedOnlyWhereNecessary()
     {
         $this->assertSame(' Taylor Otwell ', (string) $this->stringable(' Taylor Otwell ')->words(3));
@@ -483,5 +509,23 @@ class SupportStringableTest extends TestCase
         $this->assertSame(1, $this->stringable('laravelPHPFramework')->substrCount('a', 1, 2));
         $this->assertSame(3, $this->stringable('laravelPHPFramework')->substrCount('a', 1, -2));
         $this->assertSame(1, $this->stringable('laravelPHPFramework')->substrCount('a', -10, -3));
+    }
+
+    public function testPadBoth()
+    {
+        $this->assertSame('__Alien___', (string) $this->stringable('Alien')->padBoth(10, '_'));
+        $this->assertSame('  Alien   ', (string) $this->stringable('Alien')->padBoth(10));
+    }
+
+    public function testPadLeft()
+    {
+        $this->assertSame('-=-=-Alien', (string) $this->stringable('Alien')->padLeft(10, '-='));
+        $this->assertSame('     Alien', (string) $this->stringable('Alien')->padLeft(10));
+    }
+
+    public function testPadRight()
+    {
+        $this->assertSame('Alien-----', (string) $this->stringable('Alien')->padRight(10, '-'));
+        $this->assertSame('Alien     ', (string) $this->stringable('Alien')->padRight(10));
     }
 }

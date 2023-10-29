@@ -39,7 +39,8 @@ class TestResponseTest extends TestCase
 
     public function testAssertViewHasModel()
     {
-        $model = new class extends Model {
+        $model = new class extends Model
+        {
             public function is($model)
             {
                 return $this == $model;
@@ -78,6 +79,20 @@ class TestResponseTest extends TestCase
         $response->assertViewHas('foo', 'bar');
     }
 
+    public function testAssertViewHasNested()
+    {
+        $response = $this->makeMockResponse([
+            'render' => 'hello world',
+            'gatherData' => [
+                'foo' => [
+                    'nested' => 'bar',
+                ],
+            ],
+        ]);
+
+        $response->assertViewHas('foo.nested');
+    }
+
     public function testAssertViewHasWithNestedValue()
     {
         $response = $this->makeMockResponse([
@@ -90,6 +105,30 @@ class TestResponseTest extends TestCase
         ]);
 
         $response->assertViewHas('foo.nested', 'bar');
+    }
+
+    public function testAssertViewMissing()
+    {
+        $response = $this->makeMockResponse([
+            'render' => 'hello world',
+            'gatherData' => ['foo' => 'bar'],
+        ]);
+
+        $response->assertViewMissing('baz');
+    }
+
+    public function testAssertViewMissingNested()
+    {
+        $response = $this->makeMockResponse([
+            'render' => 'hello world',
+            'gatherData' => [
+                'foo' => [
+                    'nested' => 'bar',
+                ],
+            ],
+        ]);
+
+        $response->assertViewMissing('foo.baz');
     }
 
     public function testAssertSeeInOrder()
@@ -571,6 +610,20 @@ class TestResponseTest extends TestCase
         );
 
         $testResponse->assertJsonValidationErrors('foo', 'data');
+    }
+
+    public function testAssertJsonValidationErrorsCustomNestedErrorsName()
+    {
+        $data = [
+            'status' => 'ok',
+            'data' => ['errors' => ['foo' => 'oops']],
+        ];
+
+        $testResponse = TestResponse::fromBaseResponse(
+            (new Response)->setContent(json_encode($data))
+        );
+
+        $testResponse->assertJsonValidationErrors('foo', 'data.errors');
     }
 
     public function testAssertJsonValidationErrorsCanFail()
